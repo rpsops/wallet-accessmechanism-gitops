@@ -1,0 +1,95 @@
+# SPDX-FileCopyrightText: 2026 Digg - Agency for Digital Government
+#
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Per-pod response topics for the wallet-bff StatefulSet.
+#
+# Each pod (wallet-bff-0, wallet-bff-1, ...) consumes from its own
+# response topics so replies are routed back to the originating instance.
+# When scaling the StatefulSet, add matching topic pairs here BEFORE
+# scaling up: the BFF fails fast if its assigned topic is missing because
+# auto.create.topics.enable is false on the broker.
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: hsm-worker-responses-wallet-bff-0
+  labels:
+    strimzi.io/cluster: access-kafka-cluster
+spec:
+  partitions: 1
+  replicas: 2
+  config:
+    min.insync.replicas: 1
+    retention.ms: 600000
+    cleanup.policy: delete
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: hsm-worker-responses-wallet-bff-1
+  labels:
+    strimzi.io/cluster: access-kafka-cluster
+spec:
+  partitions: 1
+  replicas: 2
+  config:
+    min.insync.replicas: 1
+    retention.ms: 600000
+    cleanup.policy: delete
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: hsm-worker-responses-wallet-bff-2
+  labels:
+    strimzi.io/cluster: access-kafka-cluster
+spec:
+  partitions: 1
+  replicas: 2
+  config:
+    min.insync.replicas: 1
+    retention.ms: 600000
+    cleanup.policy: delete
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: state-init-responses-wallet-bff-0
+  labels:
+    strimzi.io/cluster: access-kafka-cluster
+spec:
+  partitions: 1
+  replicas: 2
+  config:
+    min.insync.replicas: 1
+    retention.ms: 600000
+    cleanup.policy: delete
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: state-init-responses-wallet-bff-1
+  labels:
+    strimzi.io/cluster: access-kafka-cluster
+spec:
+  partitions: 1
+  replicas: 2
+  config:
+    min.insync.replicas: 1
+    retention.ms: 600000
+    cleanup.policy: delete
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: state-init-responses-wallet-bff-2
+  labels:
+    strimzi.io/cluster: access-kafka-cluster
+spec:
+  partitions: 1
+  replicas: 2
+  config:
+    min.insync.replicas: 1
+    retention.ms: 600000
+    cleanup.policy: delete

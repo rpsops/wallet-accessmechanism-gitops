@@ -7,8 +7,11 @@ spec:
   issuerRef:
     name: mkcert
     kind: ClusterIssuer
+  # Short-name SAN only so the cert is namespace-portable (each fork
+  # deploys its own Kafka in its own namespace). The fully-qualified
+  # in-cluster names embed the namespace and would need to be templated
+  # per fork; nothing in the current stack relies on TLS to Kafka
+  # (the wallet-bff uses the plaintext 9092 listener), so the short name
+  # is sufficient for ad-hoc clients connecting via service DNS.
   dnsNames:
     - access-kafka-cluster-kafka-bootstrap
-    - access-kafka-cluster-kafka-bootstrap.default.svc
-    - access-kafka-cluster-kafka-bootstrap.default.svc.cluster.local
-    - "*.access-kafka-cluster-kafka-brokers.default.svc.cluster.local"

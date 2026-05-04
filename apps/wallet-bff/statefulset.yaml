@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: 2026 Digg - Agency for Digital Government
+#
+# SPDX-License-Identifier: EUPL-1.2
+#
+# wallet-bff runs as a StatefulSet so each pod has a stable ordinal name
+# (wallet-bff-0, wallet-bff-1, ...). The pod name is injected via the
+# downward API and used to derive per-pod Kafka response topic names,
+# matching the docker-compose dev setup where each instance owns its own
+# response topics. Topics are pre-provisioned in topics.yaml.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wallet-bff
+  labels:
+    app.kubernetes.io/name: wallet-bff
+    app.kubernetes.io/component: bff
+    app.kubernetes.io/part-of: r2ps
+spec:
+  serviceName: wallet-bff-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wallet-bff
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: wallet-bff
+        app.kubernetes.io/component: bff
+        app.kubernetes.io/part-of: r2ps
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: wallet-bff
+          # {"$imagepolicy": "flux-system:rust-wallet-bff-test"}
+          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-wallet-bff:test-0-placeholder
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8088
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: access-kafka-cluster-kafka-bootstrap:9092
+            - name: KAFKA_BROKER_ADDRESS_FAMILY
+              value: "v4"
+            # Per-pod consumer group so each instance reads all partitions
+            # of its own response topic.
+            - name: KAFKA_GROUP_ID
+              value: r2ps-rest-api-group-$(POD_NAME)
+            - name: HSM_WORKER_RESPONSE_TOPIC
+              value: hsm-worker-responses-$(POD_NAME)
+            - name: STATE_INIT_RESPONSE_TOPIC
+              value: state-init-responses-$(POD_NAME)
+            - name: REDIS_HOST
+              # Bitnami valkey chart with sentinel exposes the primary via
+              # the 'valkey' service which proxies through sentinel.
+              value: valkey
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_USERNAME
+              value: default
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: valkey
+                  key: valkey-password
+            - name: REDIS_DATABASE
+              value: "0"
+            - name: SERVER_HOST
+              value: 0.0.0.0
+            - name: SERVER_PORT
+              value: "8088"
+            - name: SERVE_SYNC
+              value: "true"
+            - name: SYNC_TIMEOUT_MS
+              value: "3000"
+            - name: STATE_INIT_TIMEOUT_MS
+              value: "5000"
+            - name: RESPONSE_TTL_SECONDS
+              value: "600"
+            - name: NONCE_TTL_SECONDS
+              value: "600"
+            - name: RUST_LOG
+              value: "wallet_bff=info,rdkafka=warn,redis=warn"
+          # No HTTP /health endpoint exists yet; fall back to TCP probes.
+          startupProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi

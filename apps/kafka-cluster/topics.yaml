@@ -1,3 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Digg - Agency for Digital Government
+#
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Shared topics for the r2ps platform.
+#
+# Per-pod response topics live with the workload that owns them
+# (see apps/wallet-bff/topics.yaml).
+---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
@@ -15,7 +24,9 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: r2ps-requests
+  # Aligns with HSM_REQUESTS_TOPIC in
+  # wallet-bff/src/infrastructure/adapters/outgoing/kafka/request_sender.rs
+  name: hsm-requests
   labels:
     strimzi.io/cluster: access-kafka-cluster
 spec:
@@ -29,35 +40,9 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: r2ps-responses
-  labels:
-    strimzi.io/cluster: access-kafka-cluster
-spec:
-  partitions: 50
-  replicas: 2
-  config:
-    min.insync.replicas: 1
-    retention.ms: 600000
-    cleanup.policy: delete
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaTopic
-metadata:
+  # Aligns with STATE_INIT_REQUESTS_TOPIC in
+  # wallet-bff/src/infrastructure/adapters/outgoing/kafka/request_sender.rs
   name: state-init-requests
-  labels:
-    strimzi.io/cluster: access-kafka-cluster
-spec:
-  partitions: 10
-  replicas: 2
-  config:
-    min.insync.replicas: 1
-    retention.ms: 600000
-    cleanup.policy: delete
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaTopic
-metadata:
-  name: state-init-responses
   labels:
     strimzi.io/cluster: access-kafka-cluster
 spec:

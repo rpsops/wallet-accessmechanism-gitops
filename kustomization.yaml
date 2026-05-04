@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Digg - Agency for Digital Government
+#
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Top-level aggregator. Flux applies this with
+# `targetNamespace: <fork-namespace>`, which rewrites every namespaced
+# resource (including ServiceAccount subjects in ClusterRoleBindings)
+# into that namespace. Listed in dependency-friendly order; ordering is
+# best-effort because no `dependsOn` is used (Flux retries until the
+# graph converges).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - apps/kafka-cluster
+  - apps/valkey
+  - apps/kafbat
+  - apps/kafbat-routes
+  - apps/headlamp
+  - apps/wallet-bff
+  - apps/hsm-worker

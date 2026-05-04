@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 Digg - Agency for Digital Government
+#
+# SPDX-License-Identifier: EUPL-1.2
+---
+# Headless service required by the StatefulSet for stable pod DNS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: wallet-bff-headless
+  labels:
+    app.kubernetes.io/name: wallet-bff
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: wallet-bff
+  ports:
+    - name: http
+      port: 8088
+      targetPort: http
+---
+# ClusterIP service load-balancing across pods, used as HTTPRoute backend.
+apiVersion: v1
+kind: Service
+metadata:
+  name: wallet-bff
+  labels:
+    app.kubernetes.io/name: wallet-bff
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: wallet-bff
+  ports:
+    - name: http
+      port: 8088
+      targetPort: http

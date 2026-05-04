@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2026 Digg - Agency for Digital Government
+#
+# SPDX-License-Identifier: EUPL-1.2
+#
+# StatefulSet so each replica owns a stable PVC for SoftHSM tokens
+# (volumeClaimTemplates). Multiple replicas can safely run because the
+# request topics are partitioned across the consumer group.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hsm-worker
+  labels:
+    app.kubernetes.io/name: hsm-worker
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/part-of: r2ps
+spec:
+  serviceName: hsm-worker
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hsm-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hsm-worker
+        app.kubernetes.io/component: worker
+        app.kubernetes.io/part-of: r2ps
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        # Match the 'myuser' UID created in the Containerfile (uid 1000).
+        fsGroup: 1000
+      containers:
+        - name: hsm-worker
+          # {"$imagepolicy": "flux-system:rust-hsm-worker-test"}
+          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-hsm-worker:test-0-placeholder
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: access-kafka-cluster-kafka-bootstrap:9092
+            - name: KAFKA_BROKER_ADDRESS_FAMILY
+              value: "v4"
+            - name: RUST_LOG
+              value: info
+          envFrom:
+            - secretRef:
+                name: hsm-worker-softhsm
+            - secretRef:
+                name: hsm-worker-opaque
+          volumeMounts:
+            - name: softhsm-tokens
+              mountPath: /myuser/softhsm/tokens
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: softhsm-tokens
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hsm-worker
+  labels:
+    app.kubernetes.io/name: hsm-worker
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: hsm-worker
+  ports:
+    - name: peer
+      port: 7000
