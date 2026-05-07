@@ -7,7 +7,7 @@
 # Per-pod response topics live with the workload that owns them
 # (see apps/wallet-bff/topics.yaml).
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: r2ps-wallet-state
@@ -21,7 +21,7 @@ spec:
     retention.ms: -1
     cleanup.policy: compact
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   # Aligns with HSM_REQUESTS_TOPIC in
@@ -37,7 +37,7 @@ spec:
     retention.ms: 600000
     cleanup.policy: delete
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   # Aligns with STATE_INIT_REQUESTS_TOPIC in
