@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 Digg - Agency for Digital Government
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+SHELL := /bin/bash
+
+K3S_NAMESPACE    ?= wallet-hsm
+K3S_REPO_NAME    ?= wallet-accessmechanism-gitops
+K3S_GIT_REMOTE   ?= k3s
+K3S_GIT_INTERNAL ?= http://git-server.git-server.svc.cluster.local/$(K3S_NAMESPACE)/$(K3S_REPO_NAME)
+K3S_GIT_EXTERNAL ?= http://git.dev.local:8080/$(K3S_NAMESPACE)/$(K3S_REPO_NAME)
+K3S_INTERVAL     ?= 1m
+K3S_BRANCH       ?= main
+K3S_PATH         ?= ./
+
+.PHONY: k3s-push k3s-register k3s-unregister help
+
+## Push this repo to the local k3s git server (initialises bare repo on first push)
+## Usage: make k3s-push [K3S_NAMESPACE=wallet-hsm]
+k3s-push:
+	@kubectl exec -n git-server deploy/git-server -- \
+	  bash -c "mkdir -p /repos/$(K3S_NAMESPACE) && \
+	           [ -d /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME) ] || \
+	           git init --bare /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME)"
+	@git remote get-url $(K3S_GIT_REMOTE) 2>/dev/null | grep -qF "$(K3S_GIT_EXTERNAL)" || \
+	  git remote set-url $(K3S_GIT_REMOTE) $(K3S_GIT_EXTERNAL) 2>/dev/null || \
+	  git remote add $(K3S_GIT_REMOTE) $(K3S_GIT_EXTERNAL)
+	git push $(K3S_GIT_REMOTE) HEAD:$(K3S_BRANCH) --force
+
+## Register this repo with Flux (Namespace + GitRepository + Kustomization + Kyverno exclusion)
+## Run once after k3s-push. Usage: make k3s-register [K3S_NAMESPACE=wallet-hsm]
+k3s-register:
+	kubectl apply -f - <<'EOF'
+	apiVersion: v1
+	kind: Namespace
+	metadata:
+	  name: $(K3S_NAMESPACE)
+	---
+	apiVersion: source.toolkit.fluxcd.io/v1
+	kind: GitRepository
+	metadata:
+	  name: $(K3S_NAMESPACE)
+	  namespace: flux-system
+	spec:
+	  interval: $(K3S_INTERVAL)
+	  url: $(K3S_GIT_INTERNAL)
+	  ref:
+	    branch: $(K3S_BRANCH)
+	---
+	apiVersion: kustomize.toolkit.fluxcd.io/v1
+	kind: Kustomization
+	metadata:
+	  name: apps-$(K3S_NAMESPACE)
+	  namespace: flux-system
+	spec:
+	  interval: 10m
+	  targetNamespace: $(K3S_NAMESPACE)
+	  path: $(K3S_PATH)
+	  prune: true
+	  sourceRef:
+	    kind: GitRepository
+	    name: $(K3S_NAMESPACE)
+	EOF
+	@kubectl patch clusterpolicy verify-internal-images --type=json \
+	  -p='[{"op":"add","path":"/spec/rules/0/exclude/any/0/resources/namespaces/-","value":"$(K3S_NAMESPACE)"}]' \
+	  2>/dev/null || true
+
+## Remove this namespace's Flux registration from the cluster
+## Usage: make k3s-unregister [K3S_NAMESPACE=wallet-hsm]
+k3s-unregister:
+	kubectl delete kustomization apps-$(K3S_NAMESPACE) -n flux-system --ignore-not-found
+	kubectl delete gitrepository $(K3S_NAMESPACE) -n flux-system --ignore-not-found
+	kubectl delete namespace $(K3S_NAMESPACE) --ignore-not-found
+
+## Show available targets
+help:
+	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/^## //'
