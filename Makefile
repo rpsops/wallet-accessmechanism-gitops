@@ -22,7 +22,7 @@ k3s-push:
 	@kubectl exec -n git-server deploy/git-server -- \
 	  bash -c "mkdir -p /repos/$(K3S_NAMESPACE) && \
 	           [ -d /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME) ] || \
-	           git init --bare /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME) && \
+	           git init --bare --initial-branch=main /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME) && \
 	           chown -R www-data:www-data /repos/$(K3S_NAMESPACE)"
 	@git remote get-url $(K3S_GIT_REMOTE) 2>/dev/null | grep -qF "$(K3S_GIT_EXTERNAL)" || \
 	  git remote set-url $(K3S_GIT_REMOTE) $(K3S_GIT_EXTERNAL) 2>/dev/null || \
