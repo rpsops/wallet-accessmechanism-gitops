@@ -42,6 +42,9 @@ k3s-register:
 k3s-unregister:
 	kubectl delete kustomization apps-$(K3S_NAMESPACE) -n flux-system --ignore-not-found
 	kubectl delete gitrepository $(K3S_NAMESPACE) -n flux-system --ignore-not-found
+	@kubectl get kafkatopics -n $(K3S_NAMESPACE) -o name 2>/dev/null \
+	  | xargs -r -I{} kubectl patch {} -n $(K3S_NAMESPACE) --type=json \
+	      -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
 	kubectl delete namespace $(K3S_NAMESPACE) --ignore-not-found
 
 ## Show available targets
