@@ -34,8 +34,8 @@ spec:
       containers:
         - name: hsm-worker
           # {"$imagepolicy": "flux-system:rust-hsm-worker-test"}
-          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-hsm-worker:test-0-placeholder
-          imagePullPolicy: IfNotPresent
+          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-hsm-worker:dev
+          imagePullPolicy: Always
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: access-kafka-cluster-kafka-bootstrap:9092

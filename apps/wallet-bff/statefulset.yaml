@@ -33,8 +33,8 @@ spec:
       containers:
         - name: wallet-bff
           # {"$imagepolicy": "flux-system:rust-wallet-bff-test"}
-          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-wallet-bff:test-0-placeholder
-          imagePullPolicy: IfNotPresent
+          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-wallet-bff:dev
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8088
