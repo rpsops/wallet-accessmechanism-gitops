@@ -4,6 +4,8 @@ metadata:
   name: kafka-tls
 spec:
   secretName: kafka-tls
+  privateKey:
+    encoding: PKCS8
   issuerRef:
     name: mkcert
     kind: ClusterIssuer
