@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: EUPL-1.2
 
 SHELL := /bin/bash
+.ONESHELL:
 
 K3S_NAMESPACE    ?= wallet-hsm
 K3S_REPO_NAME    ?= wallet-accessmechanism-gitops
@@ -21,7 +22,8 @@ k3s-push:
 	@kubectl exec -n git-server deploy/git-server -- \
 	  bash -c "mkdir -p /repos/$(K3S_NAMESPACE) && \
 	           [ -d /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME) ] || \
-	           git init --bare /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME)"
+	           git init --bare /repos/$(K3S_NAMESPACE)/$(K3S_REPO_NAME) && \
+	           chown -R www-data:www-data /repos/$(K3S_NAMESPACE)"
 	@git remote get-url $(K3S_GIT_REMOTE) 2>/dev/null | grep -qF "$(K3S_GIT_EXTERNAL)" || \
 	  git remote set-url $(K3S_GIT_REMOTE) $(K3S_GIT_EXTERNAL) 2>/dev/null || \
 	  git remote add $(K3S_GIT_REMOTE) $(K3S_GIT_EXTERNAL)
@@ -30,37 +32,7 @@ k3s-push:
 ## Register this repo with Flux (Namespace + GitRepository + Kustomization + Kyverno exclusion)
 ## Run once after k3s-push. Usage: make k3s-register [K3S_NAMESPACE=wallet-hsm]
 k3s-register:
-	kubectl apply -f - <<'EOF'
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: $(K3S_NAMESPACE)
-	---
-	apiVersion: source.toolkit.fluxcd.io/v1
-	kind: GitRepository
-	metadata:
-	  name: $(K3S_NAMESPACE)
-	  namespace: flux-system
-	spec:
-	  interval: $(K3S_INTERVAL)
-	  url: $(K3S_GIT_INTERNAL)
-	  ref:
-	    branch: $(K3S_BRANCH)
-	---
-	apiVersion: kustomize.toolkit.fluxcd.io/v1
-	kind: Kustomization
-	metadata:
-	  name: apps-$(K3S_NAMESPACE)
-	  namespace: flux-system
-	spec:
-	  interval: 10m
-	  targetNamespace: $(K3S_NAMESPACE)
-	  path: $(K3S_PATH)
-	  prune: true
-	  sourceRef:
-	    kind: GitRepository
-	    name: $(K3S_NAMESPACE)
-	EOF
+	bash scripts/k3s-register.yaml.sh $(K3S_NAMESPACE) $(K3S_INTERVAL) $(K3S_GIT_INTERNAL) $(K3S_BRANCH) $(K3S_PATH) | kubectl apply -f -
 	@kubectl patch clusterpolicy verify-internal-images --type=json \
 	  -p='[{"op":"add","path":"/spec/rules/0/exclude/any/0/resources/namespaces/-","value":"$(K3S_NAMESPACE)"}]' \
 	  2>/dev/null || true
