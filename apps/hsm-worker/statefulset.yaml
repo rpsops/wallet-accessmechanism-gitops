@@ -23,7 +23,7 @@ spec:
   template:
     metadata:
       annotations:
-        rollout-authorized-at: "1970-01-01T00:00:00Z"
+        rollout-authorized-at: "2026-05-08T10:08:35Z"
       labels:
         app.kubernetes.io/name: hsm-worker
         app.kubernetes.io/component: worker
