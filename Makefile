@@ -4,6 +4,7 @@
 
 SHELL := /bin/bash
 .ONESHELL:
+.DEFAULT_GOAL := help
 
 K3S_NAMESPACE    ?= wallet-hsm
 K3S_REPO_NAME    ?= wallet-accessmechanism-gitops
@@ -14,7 +15,7 @@ K3S_INTERVAL     ?= 1m
 K3S_BRANCH       ?= main
 K3S_PATH         ?= ./
 
-.PHONY: k3s-push k3s-register k3s-unregister help
+.PHONY: k3s-push k3s-register k3s-unregister k3s-rollout help
 
 ## Push this repo to the local k3s git server (initialises bare repo on first push)
 ## Usage: make k3s-push [K3S_NAMESPACE=wallet-hsm]
@@ -58,6 +59,26 @@ k3s-unregister:
 	@echo "Waiting for namespace to terminate..."
 	kubectl wait namespace/$(K3S_NAMESPACE) --for=delete --timeout=120s 2>/dev/null || true
 	@echo "Unregistered."
+
+## Authorize rollout: bumps timestamp annotation, commits, tags, pushes to k3s remote.
+## Flux reconciles the change and Kubernetes restarts pods to pull the new :k3s image.
+## Usage: make k3s-rollout [K3S_NAMESPACE=wallet-hsm]
+k3s-rollout:
+	@TS=$$(date -u +"%Y-%m-%dT%H:%M:%SZ"); \
+	TAG="rollout/$$(date -u +"%Y%m%dT%H%M%SZ")"; \
+	sed -i.bak "s/rollout-authorized-at: .*/rollout-authorized-at: \"$$TS\"/" \
+	  apps/wallet-bff/statefulset.yaml \
+	  apps/hsm-worker/statefulset.yaml; \
+	rm -f apps/wallet-bff/statefulset.yaml.bak apps/hsm-worker/statefulset.yaml.bak; \
+	git add apps/wallet-bff/statefulset.yaml apps/hsm-worker/statefulset.yaml; \
+	git commit -s -m "chore: rollout authorized at $$TS"; \
+	git tag "$$TAG"; \
+	git push $(K3S_GIT_REMOTE) HEAD:$(K3S_BRANCH) --follow-tags
+	@echo "Waiting for Flux to apply rollout..."
+	flux reconcile kustomization apps-$(K3S_NAMESPACE) -n flux-system --timeout=60s
+	kubectl rollout status statefulset/wallet-bff statefulset/hsm-worker \
+	  -n $(K3S_NAMESPACE) --timeout=5m
+	@echo "Rollout complete."
 
 ## Show available targets
 help:

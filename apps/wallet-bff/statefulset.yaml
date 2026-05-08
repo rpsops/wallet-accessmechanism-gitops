@@ -24,6 +24,8 @@ spec:
       app.kubernetes.io/name: wallet-bff
   template:
     metadata:
+      annotations:
+        rollout-authorized-at: "1970-01-01T00:00:00Z"
       labels:
         app.kubernetes.io/name: wallet-bff
         app.kubernetes.io/component: bff
@@ -33,7 +35,7 @@ spec:
       containers:
         - name: wallet-bff
           # {"$imagepolicy": "flux-system:rust-wallet-bff-test"}
-          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-wallet-bff:dev
+          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-wallet-bff:k3s
           imagePullPolicy: Always
           ports:
             - name: http
