@@ -22,6 +22,8 @@ spec:
       app.kubernetes.io/name: hsm-worker
   template:
     metadata:
+      annotations:
+        rollout-authorized-at: "2026-05-08T10:08:35Z"
       labels:
         app.kubernetes.io/name: hsm-worker
         app.kubernetes.io/component: worker
@@ -34,8 +36,8 @@ spec:
       containers:
         - name: hsm-worker
           # {"$imagepolicy": "flux-system:rust-hsm-worker-test"}
-          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-hsm-worker:test-0-placeholder
-          imagePullPolicy: IfNotPresent
+          image: zot.registry.svc.cluster.local:5000/diggsweden/rust-hsm-worker:k3s
+          imagePullPolicy: Always
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: access-kafka-cluster-kafka-bootstrap:9092

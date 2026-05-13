@@ -10,7 +10,7 @@
 # scaling up: the BFF fails fast if its assigned topic is missing because
 # auto.create.topics.enable is false on the broker.
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: hsm-worker-responses-wallet-bff-0
@@ -24,7 +24,7 @@ spec:
     retention.ms: 600000
     cleanup.policy: delete
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: hsm-worker-responses-wallet-bff-1
@@ -38,7 +38,7 @@ spec:
     retention.ms: 600000
     cleanup.policy: delete
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: hsm-worker-responses-wallet-bff-2
@@ -52,7 +52,7 @@ spec:
     retention.ms: 600000
     cleanup.policy: delete
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: state-init-responses-wallet-bff-0
@@ -66,7 +66,7 @@ spec:
     retention.ms: 600000
     cleanup.policy: delete
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: state-init-responses-wallet-bff-1
@@ -80,7 +80,7 @@ spec:
     retention.ms: 600000
     cleanup.policy: delete
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaTopic
 metadata:
   name: state-init-responses-wallet-bff-2
