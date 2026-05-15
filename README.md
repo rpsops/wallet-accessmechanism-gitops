@@ -130,35 +130,31 @@ pre-provisioned. To scale up:
 
 Scaling before topics exist causes the new pod to fail on startup.
 
-## Sealing hsm-worker secrets
+## Writing hsm-worker secrets to OpenBao
 
-`apps/hsm-worker/sealed-secrets.yaml` ships placeholder `SealedSecret`
-manifests with empty `encryptedData: {}`. SealedSecrets are
-**namespace-scoped**, so each namespace must re-seal its own copies.
+Secrets are stored in OpenBao and synced into the cluster by External
+Secrets Operator. They are never committed to Git.
 
-```bash
-NS=wallet-hsm
+Create a `.env` file (not committed) with:
 
-kubectl create secret generic hsm-worker-softhsm \
-  --namespace=$NS \
-  --from-env-file=../wallet-r2ps/.env.softhsm \
-  --dry-run=client -o yaml > /tmp/hsm-worker-softhsm.secret.yaml
-
-kubectl create secret generic hsm-worker-opaque \
-  --namespace=$NS \
-  --from-env-file=../wallet-r2ps/.env.opaque \
-  --dry-run=client -o yaml > /tmp/hsm-worker-opaque.secret.yaml
-
-kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets \
-  --namespace=$NS --format=yaml \
-  --secret-file=/tmp/hsm-worker-softhsm.secret.yaml \
-  > /tmp/hsm-worker-softhsm.sealed.yaml
-
-kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets \
-  --namespace=$NS --format=yaml \
-  --secret-file=/tmp/hsm-worker-opaque.secret.yaml \
-  > /tmp/hsm-worker-opaque.sealed.yaml
+```
+PKCS11_LIB=...
+PKCS11_SLOT_TOKEN_LABEL=...
+PKCS11_SO_PIN=...
+PKCS11_USER_PIN=...
+PKCS11_WRAP_KEY_ALIAS=...
+CLIENT_PUBLIC_KEY=...
+OPAQUE_SERVER_IDENTIFIER=...
+OPAQUE_SERVER_SETUP=...
+SERVER_PRIVATE_KEY=...
+SERVER_PUBLIC_KEY=...
 ```
 
-Replace the two stub blocks in `apps/hsm-worker/sealed-secrets.yaml` with
-the sealed payloads, commit, and push (`make k3s-push`).
+Then write to OpenBao (once after `make up`, or whenever values change):
+
+```bash
+make k3s-openbao-put
+```
+
+ESO will sync the secrets into the cluster within 1h, or immediately on
+`ExternalSecret` reconcile.

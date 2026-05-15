@@ -15,7 +15,28 @@ K3S_INTERVAL     ?= 1m
 K3S_BRANCH       ?= main
 K3S_PATH         ?= ./
 
-.PHONY: k3s-push k3s-register k3s-unregister k3s-rollout help
+.PHONY: k3s-push k3s-register k3s-unregister k3s-rollout k3s-openbao-put help
+
+## Write hsm-worker secrets from .env to OpenBao (run once after 'make up' or when secrets change)
+## Requires .env with: PKCS11_LIB, PKCS11_SLOT_TOKEN_LABEL, PKCS11_SO_PIN, PKCS11_USER_PIN,
+##   PKCS11_WRAP_KEY_ALIAS, CLIENT_PUBLIC_KEY, OPAQUE_SERVER_IDENTIFIER, OPAQUE_SERVER_SETUP,
+##   SERVER_PRIVATE_KEY, SERVER_PUBLIC_KEY
+k3s-openbao-put:
+	@test -f .env || (echo "ERROR: .env not found"; exit 1)
+	@set -a; source .env; set +a; \
+	bao kv put secret/$(K3S_NAMESPACE)/hsm-worker-softhsm \
+	  "PKCS11_LIB=$$PKCS11_LIB" \
+	  "PKCS11_SLOT_TOKEN_LABEL=$$PKCS11_SLOT_TOKEN_LABEL" \
+	  "PKCS11_SO_PIN=$$PKCS11_SO_PIN" \
+	  "PKCS11_USER_PIN=$$PKCS11_USER_PIN" \
+	  "PKCS11_WRAP_KEY_ALIAS=$$PKCS11_WRAP_KEY_ALIAS"
+	@set -a; source .env; set +a; \
+	bao kv put secret/$(K3S_NAMESPACE)/hsm-worker-opaque \
+	  "CLIENT_PUBLIC_KEY=$$CLIENT_PUBLIC_KEY" \
+	  "OPAQUE_SERVER_IDENTIFIER=$$OPAQUE_SERVER_IDENTIFIER" \
+	  "OPAQUE_SERVER_SETUP=$$OPAQUE_SERVER_SETUP" \
+	  "SERVER_PRIVATE_KEY=$$SERVER_PRIVATE_KEY" \
+	  "SERVER_PUBLIC_KEY=$$SERVER_PUBLIC_KEY"
 
 ## Push this repo to the local k3s git server (initialises bare repo on first push)
 ## Usage: make k3s-push [K3S_NAMESPACE=wallet-hsm]
